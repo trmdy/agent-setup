@@ -1,0 +1,4 @@
+interface:
+  display_name: "Linear API"
+  short_description: "Linear GraphQL via hem project secrets"
+  default_prompt: "Use $linear-api to fetch or mutate Linear data via GraphQL, loading token from hem project/digitech/linear."

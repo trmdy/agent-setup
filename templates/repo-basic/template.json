@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "name": "repo-basic",
+  "description": "Basic repo template using partials",
+  "variables": [
+    { "name": "project_name", "type": "string", "default": "{{project}}" },
+    { "name": "description", "type": "string", "default": "" },
+    { "name": "primary_stack", "type": "choice", "choices": ["go", "python", "node", "rust", "other"], "required": true },
+    { "name": "license", "type": "choice", "choices": ["MIT", "Apache-2.0", "Proprietary", "None"], "default": "MIT" }
+  ],
+  "files": {
+    "include": ["**/*"],
+    "exclude": ["template.json", "hooks/**"],
+    "template_extensions": [".tmpl"]
+  },
+  "partials": [
+    {
+      "name": "agent-core",
+      "target": ".",
+      "variables": {
+        "project_name": "{{project_name}}",
+        "primary_stack": "{{primary_stack}}"
+      }
+    },
+    {
+      "name": "readme-basic",
+      "target": ".",
+      "variables": {
+        "project_name": "{{project_name}}",
+        "description": "{{description}}",
+        "license": "{{license}}"
+      }
+    }
+  ],
+  "tags": ["example", "test"],
+  "state": "active"
+}

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Forge Swarm Orchestrator"
+  short_description: "Run forge swarms with sv flow and safe ramp controls"

@@ -84,42 +84,17 @@ Start: say hi + 1 motivating line.
 - Big review: git --no-pager diff --color=never.
 - Multi-agent: check git status/diff before edits; ship small commits.
 
-## sv usage
-
-- `sv --robot-help`
-- Check if the repo uses `sv`: Look for existence of `.sv`.
-- Usage of `sv` will be indicated in repo AGENTS.md.
-- Only create a new workspace when doing very long and complicated features, or when requiring 
-- Use sv to check file locks. Only stop when a 
-- Always merge your own changes back into main from a workspace by using the hoist command after finishing.
-
 ## Tools
-
-### Agent Communication (fmail)
-
-- `fmail` is our agent-to-agent messaging tool of choice.
-- start most sessions with registering yourself
-- if you are inside a forge loop note your name and use this for all comms
-- if you are outside a loop call register; you get a name automatically
-
-```bash
-export FMAIL_AGENT=<your-name>   # Prefer a stable name for the session
-fmail register                   # Request a unique name (auto-generated)
-fmail send @agent "message"      # Direct message
-fmail send topic "message"       # Topic message (e.g., status, editing)
-fmail log @agent -n 20           # Read DMs
-fmail watch topic --count 1      # Wait for a reply
-```
-
-
-### tickets (`tk`)
-
-- Tickets is our in-repo task manager of choice.
-- Tickets store markdown files in `.tickets/` for tracking.
-- `tk --help` to get started.
 
 ### gh
 
 - GitHub CLI for PRs/CI/releases. Given issue/PR URL (or /pull/5): use gh, not web search.
 - Examples: gh issue view <url> --comments -R owner/repo, gh pr view <url> --comments --files -R owner/repo.
 
+## Hem usage (secrets)
+
+- Canonical commands for robots: `hem examples --format json`.
+- Secret refs: `<name>`, `global/<name>`, `project/<project>/<name>`, `identity/<identity>/<name>`.
+- Auth: pass `--token` or `VALHALL_HEM_TOKEN` (avoid operator token in automation).
+- If `hem get/set/delete` returns pending approval: stop, ask human, retry with `--approval-receipt`.
+- `hem approve` / `hem deny` are human-only approval gates; do not automate.

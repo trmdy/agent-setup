@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "readme-basic",
+  "description": "Simple README",
+  "version": "0.1.0",
+  "variables": [
+    { "name": "project_name", "type": "string", "default": "{{DIRNAME}}" },
+    { "name": "description", "type": "string", "default": "" },
+    { "name": "license", "type": "choice", "choices": ["MIT", "Apache-2.0", "Proprietary", "None"], "default": "MIT" }
+  ],
+  "files": { "include": ["**/*"], "exclude": ["partial.json", "hooks/**"] },
+  "tags": ["docs"]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Figma API Extractor"
+  short_description: "Headless Figma frame and image extraction API"
+  default_prompt: "Use $figma-api-extractor to extract top-level frames and image URLs from this Figma node URL via REST API."

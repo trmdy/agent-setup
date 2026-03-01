@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "name": "agent-core",
+  "description": "Minimal agent scaffolding",
+  "version": "0.1.0",
+  "variables": [
+    {
+      "name": "project_name",
+      "type": "string",
+      "default": "{{DIRNAME}}",
+      "description": "Project display name"
+    },
+    {
+      "name": "primary_stack",
+      "type": "choice",
+      "choices": ["go", "python", "node", "rust", "other"],
+      "required": true,
+      "description": "Primary stack"
+    }
+  ],
+  "files": {
+    "include": ["**/*"],
+    "exclude": ["partial.json", "hooks/**"]
+  },
+  "tags": ["agent", "scaffold"]
+}
