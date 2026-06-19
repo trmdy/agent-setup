@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dynamic Flow Generator"
+  short_description: "Design ad-hoc and saved Hive flow templates"
+  default_prompt: "Use $dynamic-flow-generator to design an ad-hoc or saved Hive flow template for fan-out, coordination, loops, and collection."

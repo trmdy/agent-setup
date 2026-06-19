@@ -1,0 +1,4 @@
+interface:
+  display_name: "Autonomous Hive Coordinator"
+  short_description: "Coordinate large async Honeybee swarms"
+  default_prompt: "Use $autonomous-hive-agent-coordinator to coordinate a large asynchronous Honeybee swarm driven by hive and Pollinate."

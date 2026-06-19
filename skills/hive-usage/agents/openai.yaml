@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hive Usage"
+  short_description: "Operate Honeybee hive agents and swarms"
+  default_prompt: "Use $hive-usage to operate Honeybee hive sessions, swarms, flows, loops, and buz messaging."

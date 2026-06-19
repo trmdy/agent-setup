@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pollinate Usage"
+  short_description: "Configure Pollinate triggers and routers"
+  default_prompt: "Use $pollinate-usage to create, inspect, and run Pollinate schedules, polls, webhooks, routers, and Honeybee actions."
