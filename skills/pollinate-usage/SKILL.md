@@ -89,6 +89,7 @@ pol github create-pr-router repo-pr-router --repo Owner/repo --cwd "$PWD" \
 - Set `maxConcurrent` intentionally; default flag path is 1.
 - Use `batched` or `debounced` for noisy webhook/comment streams.
 - Use router triggers when many events must correlate to one long-lived target.
+- Treat delivery as at-least-once. Retries, webhook redelivery, and overlapping schedules can fire the same activation twice, so actions that spawn or mutate (`honeybee-spawn`/`-flow`/`-send`) must be idempotent or dedupe on a stable key (event id, shard id, PR number). Prefer `debounced`/`throttled` for bursty sources, cap `maxConcurrent`, and make the downstream flow/loop check "already handled?" before doing work — otherwise one noisy webhook becomes a swarm of duplicate bees.
 - Watch `pol jobs`, `pol job <id>`, and `pol ledger` after changes.
 
 ## Output Contract

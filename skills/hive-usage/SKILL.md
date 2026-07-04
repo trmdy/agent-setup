@@ -62,6 +62,7 @@ hive clean --dead --older-than 7d --dry-run
 - Orchestration: `flow define/run/runs/logs/status/cancel`, `loop start/status/logs/stop/list`.
 - Messaging: `buz send/inbox/outbox/queue/read/purge/config`.
 - Retrieval: `seal`, `seals find`, `search`.
+- Cost/usage: `spend ingest`, `spend usage`, `spend session <bee>`, `spend report`, `spend leverage` — API-equivalent cost ledger over harness transcripts; `spend session` drills one bee down to cost, model mix, caching health, and a context-per-turn trajectory.
 - Infrastructure: `node`, `substrate`, `daemon`, `config`, `completion`.
 
 Read [references/hive-commands.md](references/hive-commands.md) for detailed command syntax and [references/hive-patterns.md](references/hive-patterns.md) for operational patterns.
@@ -70,22 +71,34 @@ Read [references/hive-commands.md](references/hive-commands.md) for detailed com
 
 - Start with one bee or a tiny swarm, prove readiness and output shape, then scale.
 - Treat `blocked`, `node_unreachable`, `kill_failed`, and readiness timeouts as hard operational signals. Inspect before retrying.
+- A readiness timeout is **not** death. The boot probe timed out; the process may still be coming up. Inspect the pane (`hive tail <bee>` / `hive attach <bee> --print`) before respawning, and never declare a bee dead from a probe timeout alone. Note `hive ps` can show a stale `working` for a bee whose tmux pane has actually exited — confirm liveness with `hive tail` (a dead pane prints "tmux pane is not running").
+- Bind credentials with `--account <name|auto>` (or the `<tool>-<account>` shorthand, e.g. `hive spawn codex-auto`), not `--home`. A *home* is a slot (the "where"); an *account* is the identity (the "who") and `--account` activates it into a free home. `--account auto` picks a free credentialed account — use it for codex/claude/opencode rather than hand-picking a home.
+- Codex bees timing out on boot while many share one `CODEX_HOME` is a credential-collision symptom (single-use OAuth refresh tokens race on concurrent boot), **not** general flakiness. Spread load across accounts with `--account auto`, and never spawn onto the current session's own account home.
 - Use `--yolo` deliberately. Claude defaults to permissionless; use `--no-yolo` when approvals matter.
 - Use `--no-wait` only when an upper layer will check readiness later.
 - Prefer `--background` flow runs and loops for durable async work; always record the run id.
 - Do not search transcripts with `hive search`; it searches seals, ledger, and session records only.
 - Clean dead metadata with `hive clean --dead --dry-run` before destructive cleanup.
+- For long or expensive bees, watch API-equivalent cost with `hive spend usage` and `hive spend session <bee>`. A session whose context-per-turn climbs toward the model's cap is hoarding context — cache-read tokens dominate the bill and it will compact sooner. Compact, checkpoint, or externalize state instead of letting context grow unbounded.
 
 ## Common Examples
 
 ```sh
-hive run codex -p "Inspect this repo and seal a risk summary." --cwd "$PWD" --wait --last
-hive spawn codex --count 8 --cwd "$PWD" --colony audit --swarm-id audit-pass-001
+hive run codex --account auto -p "Inspect this repo and seal a risk summary." --cwd "$PWD" --wait --last
+hive spawn codex --count 8 --account auto --cwd "$PWD" --colony audit --swarm-id audit-pass-001
 hive send @audit-pass-001 "Each take a different module. Seal findings as JSON."
 hive wait CO.a3f --seal
 hive flow run deep-review --arg target=src --background
 hive loop start --bee codex --cwd "$PWD" --context rolling --max 50 --prompt-file ./loop-task.md
 ```
+
+Pass harness args after `--` (precedence FLAG > profile > account default). To pin a known-good codex model/effort:
+
+```sh
+hive spawn codex --account auto --cwd "$PWD" -- -m gpt-5.5 -c 'model_reasoning_effort="xhigh"'
+```
+
+Ground truth beats `--help` (a terse one-line usage). `hive ps --wide` prints the exact command line of every live bee — copy a known-good invocation (model pin, account home) from a working bee rather than guessing flags.
 
 ## Output Contract
 

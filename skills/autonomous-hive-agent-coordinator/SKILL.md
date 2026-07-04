@@ -16,6 +16,8 @@ Use this skill to act as the orchestration layer above Honeybee and Pollinate. H
 5. Treat seals and ledgers as the contract. Do not coordinate from screenshots or vague pane reads when structured output is possible.
 6. Use dynamic workflow structure to prevent partial completion, self-review bias, and goal drift: isolate worker contexts, add verifier agents, and keep the control loop outside worker prompts.
 7. Use native harness features through Hive when they fit. A Hive bee is still a Claude/Codex/OpenCode/Grok/Pi/Droid session, so prompts may invoke supported native features such as `/goal`, `/loop`, model modes, or built-in review/research tools. Verify per harness before relying on them.
+8. **Hold no fleet state in your head.** The live truth is `hive ps` plus your assignments file — reconcile them every cycle and act from the reconciled view, never from memory. Context compaction silently drops the in-context bee list, so a long-running coordinator that tracks bees mentally *will* lose them (spawn orphans, re-dispatch done shards, forget blocked bees). Write each assignment to a file the instant you spawn, and re-read that file before every routing decision.
+9. **Stay lean and route by cost.** A coordinator that carries every worker's history re-reads a huge context each turn — cache-read tokens dominate the bill and it compacts sooner (which triggers rule 8's failure). Keep detail in worker seals and the assignments file, not your own transcript. Reserve the most capable (most expensive) model for cross-cutting judgment — decomposition, hazard detection, merge; run mechanical coordination (status sweeps, dispatch, kills) at lower effort or on a cheaper model. Verify with `hive spend` (see below), not by guessing.
 
 Read [references/orchestration-playbook.md](references/orchestration-playbook.md) for launch/ramp/monitor/stop patterns and [references/scale-patterns.md](references/scale-patterns.md) for high-scale sharding and backpressure.
 
@@ -70,6 +72,25 @@ Only increase concurrency after outputs are valid and the monitor loop is workin
 - Merge agents do not modify worker artifacts in place; they produce a merge artifact.
 - Review agents challenge merged output against raw seals.
 - Coordinators pause or stop swarms when duplicate work, blocked state, or runaway retries appear.
+
+## Cost And Efficiency Observability
+
+Honeybee prices every bee's token usage at API-equivalent list rates. Use the ledger to catch an inefficient coordinator before it burns a day of budget, and to justify the model mix:
+
+```sh
+hive spend usage --granularity day            # today's spend by model, all seats
+hive spend usage --granularity month          # month-to-date, with a daily sparkline
+hive spend session <coordinator-bee>          # one session: cost, model mix, caching
+                                              # health, and a context-per-turn sparkline
+```
+
+Read the session drill-down as a diagnosis:
+
+- **cache-write/read high (>~10%)** → prompt-prefix thrashing (tools/system/early context changing mid-run). Stabilize the prefix; this is the expensive failure mode.
+- **context/turn climbing toward the model's cap before it drops** → the coordinator is hoarding context; cache-read cost scales with how high it climbs × turns spent there. Compact/checkpoint sooner or externalize state (rule 8).
+- **one costly model dominating on routine turns** → route status sweeps, dispatch, and cleanup to a cheaper model/lower effort; keep the premium model for reasoning (rule 9).
+
+A healthy long coordinator shows low cache-write/read (stable prefix) and a context trajectory that stays flat or saw-tooths (regular compaction), not one that ramps to the cap.
 
 ## Pollinate Integration
 
