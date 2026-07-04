@@ -58,7 +58,8 @@ hive clean --dead --older-than 7d --dry-run
 ## Command Map
 
 - Spawn/control: `spawn`, `run`, `x`, `send`, `brief`, `wait`, `tail`, `transcript`, `last`, `attach`, `kill`, `clean`.
-- Organization: `colony`, `swarm`, `frame`, selectors `<bee-id>`, `@swarm`, `colony:name`.
+- Organization: `colony`, `swarm`, `frame`, selectors `<bee-id>`, `@swarm`, `colony:name`, `spawned-by:<bee>` (children a bee spawned).
+- Fleet/lineage: `fleet [<bee>]` — an orchestrator's spawned-child tree with each child's live state (running/blocked/sealed/dead), idle time, and last seal; defaults to self inside a bee, `--json` for the reconcile payload. Spawning a child through hive from inside a bee records the parent edge automatically, so the tree is always reconstructable from disk (never from the orchestrator's context).
 - Orchestration: `flow define/run/runs/logs/status/cancel`, `loop start/status/logs/stop/list`.
 - Messaging: `buz send/inbox/outbox/queue/read/purge/config`.
 - Retrieval: `seal`, `seals find`, `search`.

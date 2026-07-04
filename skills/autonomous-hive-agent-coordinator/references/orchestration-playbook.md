@@ -58,7 +58,7 @@ The coordinator's own context is a first-class reliability and cost hazard. A lo
 Rules:
 
 - **The assignments file is the source of truth, not the transcript.** Append to `assignments.jsonl` the instant you spawn (shard id, bee id, state, timestamps). Re-read it at the top of every cycle. Never route from memory.
-- **Reconcile against ground truth each cycle.** `hive ps` is what is actually alive; `assignments.jsonl` is what you think you launched. Diff them: bees in `ps` not in your file are orphans (adopt or kill); assignments with no live bee are done, dead, or lost (check the seal, re-dispatch, or close).
+- **Reconcile from `hive fleet` each cycle.** `hive fleet <self> --json` is your live descendant tree read straight from disk — every child with state, idle time, and last seal inline — because a bee spawned through hive from inside another bee records its parent automatically. Diff it against `assignments.jsonl` (your shard→bee *intent*): a live bee not in your file is an orphan (adopt or kill); an assignment with no live bee is done, dead, or lost (check the seal, re-dispatch, or close). `hive ps` remains the flat cross-colony view when you need bees outside your own subtree.
 - **Keep the coordinator lean.** Push detail into worker seals and the assignments file, not the coordinator prompt. The coordinator should read *summaries and status*, not full worker transcripts. Carrying every worker's output is what drives the context toward the cap.
 - **Checkpoint before you compact.** Write a compact `fleet-state.md` (open shards, live bees, blockers, decisions) on a cadence. If context compacts (or the coordinator is resumed/forked), rebuild from `fleet-state.md` + `hive ps` + seals, not from what survived in-context.
 - **Externalize decisions, not just data.** Record *why* a shard was routed a certain way, so a resumed coordinator doesn't re-litigate or contradict itself.
@@ -66,12 +66,15 @@ Rules:
 Reconcile sketch:
 
 ```sh
-# What is alive vs what you recorded
+# Your live descendant tree, straight from disk — each child's state + last seal inline
+hive fleet "$SELF" --json > fleet.json
+# Flat cross-colony view + seals, for bees outside your own subtree
 hive ps --colony mission --wide --json > live.json
-# For each assignment with state=working but no live bee → inspect its last seal
 hive seals find '"shard_id"' --colony mission --since 24h --json > seals.json
-# Coordinator diffs live.json against assignments.jsonl and seals.json, then acts.
+# Coordinator diffs fleet.json against assignments.jsonl (+ seals.json), then acts.
 ```
+
+`$SELF` is your own bee name/id — inside a bee, `hive fleet` with no argument defaults to self.
 
 Symptom that you skipped this: "I lost track of a bee across compaction," duplicate shard work, or spawning past your concurrency cap because the old bees fell out of context. The fix is always to reconcile from `hive ps` + files, never to remember harder.
 
@@ -116,7 +119,8 @@ Use batches. Example: `3 -> 10 -> 25 -> 50`, then repeat bounded batches rather 
 Run every few minutes while the swarm is active:
 
 ```sh
-hive ps --colony mission --wide             # ground truth: what is alive now
+hive fleet --json                           # your live descendant tree (state + seals inline)
+hive ps --colony mission --wide             # flat cross-colony ground truth
 hive search "flow.run" --type ledger --since 30m
 hive seals find "blocked" --colony mission --since 30m
 hive spend usage --granularity day          # cost by model so far today
@@ -124,7 +128,7 @@ pol jobs --last 20
 pol ledger -n 50
 ```
 
-Reconcile `hive ps` against `assignments.jsonl` (see Coordinator State And Context Hygiene) before routing anything new.
+Reconcile `hive fleet` against `assignments.jsonl` (see Coordinator State And Context Hygiene) before routing anything new.
 
 Check:
 
@@ -242,11 +246,12 @@ Then rewrite assignments and resume by explicit bee id.
 Coordinator lost track of the fleet (compaction, resume, or fork):
 
 ```sh
-hive ps --colony mission --wide --json > live.json         # what is actually alive
+hive fleet "$SELF" --json > fleet.json                     # your tree, rebuilt from disk
+hive ps --colony mission --wide --json > live.json         # flat cross-colony view
 hive seals find '"shard_id"' --colony mission --since 24h --json > seals.json
 ```
 
-Rebuild `fleet-state.md` from `live.json` + `seals.json` + `assignments.jsonl` — never from what survived in-context. Adopt orphaned bees, close shards that have a `done` seal, re-dispatch shards whose bee is gone. Then continue from the reconciled file.
+Rebuild `fleet-state.md` from `fleet.json` + `live.json` + `seals.json` + `assignments.jsonl` — never from what survived in-context. Adopt orphaned bees, close shards that have a `done` seal, re-dispatch shards whose bee is gone. Then continue from the reconciled file.
 
 Runaway flow:
 
