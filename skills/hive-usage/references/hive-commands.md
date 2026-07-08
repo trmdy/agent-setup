@@ -45,13 +45,17 @@ HIVE_CODEX_YOLO=1 hive spawn codex
 Single bee:
 
 ```sh
-hive spawn codex --cwd "$PWD"
-hive spawn codex2 --cwd "$PWD"
-hive spawn claude --home ~/.claude-3 --cwd "$PWD"
+hive spawn codex --account auto --cwd "$PWD"
+hive spawn codex-ur --cwd "$PWD"            # <tool>-<account> shorthand
+hive spawn claude --account auto --cwd "$PWD"
 hive spawn grok --node mini01 --cwd "$PWD"
 ```
 
-Spawn waits for readiness by default and accepts common startup trust prompts. Use `--no-accept-trust` to leave trust prompts untouched, `--no-wait` to return immediately, and `--force-send` only for `run`/`x` readiness timeouts.
+Full signature: `hive spawn <bee> [--name] [--cwd] [--account <name|auto>] [--yolo] [-- <bee-args...>]`. `run` and `x` accept the same flags — they funnel straight through `spawn`, so `hive x codex-auto "..."` and `hive run codex --account auto -- -m gpt-5.5 -p "..."` both work.
+
+Bind credentials with `--account`, not `--home`. An *account* is the provider identity (the "who"); a *home* is the slot it activates into (the "where"). `--account auto` selects a free credentialed account — prefer it over hand-picking a home, which is the mistake that strands a bee on an uncredentialed or already-contended home. Pass harness args after `--` (e.g. `-- -m gpt-5.5 -c 'model_reasoning_effort="xhigh"'`); precedence is FLAG > profile > account default.
+
+Spawn waits for readiness by default and accepts common startup trust prompts. Use `--no-accept-trust` to leave trust prompts untouched, `--no-wait` to return immediately, and `--force-send` only for `run`/`x` readiness timeouts. A readiness timeout means the boot probe expired — inspect the pane (`hive tail`/`hive attach --print`) before respawning; do not treat it as death.
 
 Yolo policy:
 

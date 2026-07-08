@@ -118,6 +118,8 @@ Prefer:
 
 `blocked`: inspect pane with `hive tail`, then `hive attach` if human approval is required. Do not keep sending prompts.
 
+Readiness timeout (esp. codex on boot): a probe timeout is **not** death — inspect first (`hive tail <bee>` / `hive attach <bee> --print`), and remember `hive ps` may show a stale `working` for a bee whose pane has exited (a dead pane prints "tmux pane is not running"). Do not respawn blindly; each blind respawn leaves an orphan. Leading causes, in order: (1) **credential collision** — many bees sharing one `CODEX_HOME` race the single-use OAuth refresh token on concurrent boot; fix by spreading across accounts with `--account auto`, never the current session's own account home. (2) **uncredentialed home** — a bare `hive x codex` may land on a home with no creds; bind one with `--account <name|auto>`. (3) **bad/default model config** — copy a known-good invocation from a live bee (`hive ps --wide` shows it, e.g. `-- -m gpt-5.5`). Prove one bee with `hive run <bee> --account auto -p "…" --wait --last` before scaling. End bees you no longer need with `hive retire` (archives, revivable); reserve `hive kill --yes` / `hive clean --dead --dry-run` for truly purging orphaned records.
+
 `node_unreachable`: check `hive node inspect`, SSH/Tailscale reachability, and avoid broad cleanup until node status is known.
 
 `kill_failed`/`retire_failed`: use `hive attach --print` or substrate-native tmux commands to verify process state. Retry `hive retire` (or `hive kill`) only after understanding why the prior teardown failed.
