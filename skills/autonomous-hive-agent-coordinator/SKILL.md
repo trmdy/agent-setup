@@ -111,7 +111,7 @@ pol create event-swarm --source webhook --path mission/event --delivery debounce
 - Do not spawn thousands of live interactive tmux agents unless nodes, auth homes, API quotas, and cleanup are explicitly planned. Prefer Pollinate batches, Hive flows, loops, and queued shards.
 - Cap per-node and per-harness concurrency; leave headroom for coordinator/reviewer agents.
 - Use `--background` flows for durable work and save run ids.
-- Use `hive flow cancel`, `hive loop stop --now`, and `hive kill` as first-class rollback steps.
+- Use `hive flow cancel`, `hive loop stop --now`, and `hive retire` (archive — the everyday stop; keeps records revivable) as first-class rollback steps. Reserve `hive kill --yes` for a deliberate purge (it permanently deletes the record, seals, and run dir). After a substrate crash (tmux server died), recover the fleet with `hive revive --crashed`.
 - Prefer `queue`/`passive` `buz` for async coordination; reserve `interrupt` for urgent control.
 - Treat provider auth homes as capacity-limited resources.
 - Use mechanical stop conditions before LLM judge conditions.

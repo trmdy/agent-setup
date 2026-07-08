@@ -58,7 +58,7 @@ The coordinator's own context is a first-class reliability and cost hazard. A lo
 Rules:
 
 - **The assignments file is the source of truth, not the transcript.** Append to `assignments.jsonl` the instant you spawn (shard id, bee id, state, timestamps). Re-read it at the top of every cycle. Never route from memory.
-- **Reconcile from `hive fleet` each cycle.** `hive fleet <self> --json` is your live descendant tree read straight from disk — every child with state, idle time, and last seal inline — because a bee spawned through hive from inside another bee records its parent automatically. Diff it against `assignments.jsonl` (your shard→bee *intent*): a live bee not in your file is an orphan (adopt or kill); an assignment with no live bee is done, dead, or lost (check the seal, re-dispatch, or close). `hive ps` remains the flat cross-colony view when you need bees outside your own subtree.
+- **Reconcile from `hive fleet` each cycle.** `hive fleet <self> --json` is your live descendant tree read straight from disk — every child with state, idle time, and last seal inline — because a bee spawned through hive from inside another bee records its parent automatically. Diff it against `assignments.jsonl` (your shard→bee *intent*): a live bee not in your file is an orphan (adopt or retire); an assignment with no live bee is done, retired, crashed, or lost (check the seal, re-dispatch, or close — `crashed` means an un-commanded death you can `hive revive`). `hive ps` remains the flat cross-colony view when you need bees outside your own subtree.
 - **Keep the coordinator lean.** Push detail into worker seals and the assignments file, not the coordinator prompt. The coordinator should read *summaries and status*, not full worker transcripts. Carrying every worker's output is what drives the context toward the cap.
 - **Checkpoint before you compact.** Write a compact `fleet-state.md` (open shards, live bees, blockers, decisions) on a cadence. If context compacts (or the coordinator is resumed/forked), rebuild from `fleet-state.md` + `hive ps` + seals, not from what survived in-context.
 - **Externalize decisions, not just data.** Record *why* a shard was routed a certain way, so a resumed coordinator doesn't re-litigate or contradict itself.
@@ -266,6 +266,21 @@ Runaway loop:
 ```sh
 hive loop status <loopId> --json
 hive loop stop <loopId> --now
+```
+
+Ending bees you no longer need (retire, don't kill):
+
+```sh
+hive retire <bee>                   # everyday stop: archive the record, keep it revivable
+hive retire @mission-shard-001      # retire a whole swarm/colony at once
+hive kill <bee> --yes               # RARE purge: also delete record + seals + run dir
+```
+
+Recovering after a substrate crash (tmux server died, every pane-bee `crashed`):
+
+```sh
+hive revive --crashed               # revive exactly the un-commanded deaths; skips retired/sealed
+hive revive --crashed --no-wait     # skip the post-relaunch readiness wait for a large fleet
 ```
 
 Dead or stale metadata:

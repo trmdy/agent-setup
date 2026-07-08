@@ -124,16 +124,20 @@ Stop by scope:
 ```sh
 hive send colony:mission "Stop after current shard. Seal status."
 hive ps --colony mission --wide
-hive swarm destroy @mission-001
+hive retire colony:mission          # everyday stop for the whole colony (archives, revivable)
+hive swarm destroy @mission-001     # retires each member (records kept)
 hive flow cancel <runId>
 hive loop stop <loopId>
 ```
 
-Then clean:
+Then, only to truly purge (records + seals + run dirs are gone, not revivable):
 
 ```sh
+hive kill <bee> --yes               # rare; per-bee purge
 hive clean --dead --dry-run
 hive clean --dead --older-than 1d
 ```
+
+If the tmux server itself crashed mid-run, the fleet lands in `crashed` (record live, session gone). Recover it before deciding anything is lost: `hive revive --crashed --no-wait`.
 
 Never delete artifacts or assignment ledgers before merge/review completes.
