@@ -126,7 +126,10 @@ hive wait CO.a3f --seal
 hive attach CO.a3f --print
 ```
 
-State labels include `booting`, `ready`, `active`, `idle`, `blocked`, `sealed`, `dead`, `kill_failed`, and `offline`. Treat `blocked` as a required human/owner intervention unless the next command intentionally resolves trust/permission.
+State labels include `booting`, `ready`, `active`, `idle`, `blocked`, `sealed`, `crashed`, `archived`, `dead`, `kill_failed`, and `offline`. Treat `blocked` as a required human/owner intervention unless the next command intentionally resolves trust/permission.
+
+- **`crashed`** — the record is still live but its tmux session / HSR host is gone AND no retire/kill was issued: an un-commanded death (tmux server crash, external kill, harness exit). This is the state to recover with `hive revive --crashed`. Distinct from `dead` (only explicitly-marked/legacy records) and from `archived` (deliberately retired).
+- **`archived`** — the bee was deliberately retired (`hive retire`/`archive`). Settled on purpose; excluded from the active list and from bulk revive, but still revivable by name.
 
 ## Messaging
 
@@ -229,14 +232,32 @@ hive daemon logs --lines 100 --follow
 hive daemon stop
 ```
 
-## Cleanup
+## Revive
 
 ```sh
-hive kill CO.a3f
-hive swarm destroy @review-001
+hive revive CO.a3f                 # relaunch a dead/crashed bee, resume its provider session
+hive revive CO.a3f --fresh         # start a new session instead (clears the stale session id)
+hive revive CO.a3f --session <id>  # resume a specific provider session id
+hive revive --crashed              # revive ALL crashed bees (post tmux-server-crash recovery)
+hive revive --all                  # revive every non-archived dead/crashed local bee
+hive revive --crashed --no-wait    # skip the post-relaunch readiness wait
+```
+
+Revive resumes a bee in its own cwd/home with no account switch, waits for readiness, and auto-drives claude's startup dialogs (trust, bypass-permissions, resume-mode chooser, renderer tour). It also refreshes the bee's home credentials from the vault first, so a bee whose token expired while it was dead does not boot logged-out. `--crashed` targets exactly the un-commanded deaths and skips sealed bees; both `--crashed` and `--all` exclude retired (`archived`) bees. Retired bees stay revivable individually by name.
+
+## Ending bees: retire (everyday) vs kill (rare purge)
+
+```sh
+hive retire CO.a3f                 # everyday stop: tears down the runtime, ARCHIVES the record
+hive retire @review-001            # retire a whole swarm (also colony:name, tags)
+hive archive CO.a3f                # alias of retire
+hive kill CO.a3f --yes             # RARE purge: also deletes record + seals + run dir (prompts without --yes)
+hive swarm destroy @review-001     # retires each member (records kept)
 hive clean --dead --dry-run
 hive clean --dead --older-than 7d
 hive clean --idle --older-than 30m --dry-run
 ```
 
-Use dry runs before broad cleanup. `kill_failed` records are not cosmetic; inspect and retry or manually kill the tmux session.
+- **`hive retire <bee|@swarm|colony:name>`** (alias `archive`) is the everyday way to end a bee: it stops the tmux session / HSR runner and sets the record to `archived`. Seals, ledger history, and the provider session all survive, and the bee stays **revivable**. This is what `swarm destroy`, `run --rm`, flow `kill-on-end`, and the bees-TUI kill key now do.
+- **`hive kill <bee>`** is the rare garbage collector: it stops the bee AND permanently deletes its session record, seals, and HSR run dir — not revivable afterwards. It prompts `y/N` on a TTY and requires `--yes`/`--force` when scripted. Use it only to truly purge a bee; reach for `retire` otherwise.
+- Use dry runs before broad cleanup. `kill_failed`/`retire_failed` records are not cosmetic; inspect and retry or manually kill the tmux session.

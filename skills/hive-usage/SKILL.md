@@ -51,13 +51,14 @@ hive seals find "regression" --colony honeybee
 hive tail CO.a3f -n 120
 hive transcript CO.a3f --json
 hive wait CO.a3f --last
-hive kill CO.a3f
+hive retire CO.a3f                       # everyday stop: archive the record, keep it revivable
+hive kill CO.a3f --yes                   # RARE: purge record + seals + run dir (not revivable)
 hive clean --dead --older-than 7d --dry-run
 ```
 
 ## Command Map
 
-- Spawn/control: `spawn`, `run`, `x`, `send`, `brief`, `wait`, `tail`, `transcript`, `last`, `attach`, `kill`, `clean`.
+- Spawn/control: `spawn`, `run`, `x`, `send`, `brief`, `wait`, `tail`, `transcript`, `last`, `attach`, `retire`/`archive` (everyday stop), `kill` (rare purge, `--yes`), `revive` (`--crashed`/`--all`/`--fresh`), `clean`.
 - Organization: `colony`, `swarm`, `frame`, selectors `<bee-id>`, `@swarm`, `colony:name`, `spawned-by:<bee>` (children a bee spawned).
 - Fleet/lineage: `fleet [<bee>]` — an orchestrator's spawned-child tree with each child's live state (running/blocked/sealed/dead), idle time, and last seal; defaults to self inside a bee, `--json` for the reconcile payload. Spawning a child through hive from inside a bee records the parent edge automatically, so the tree is always reconstructable from disk (never from the orchestrator's context).
 - Orchestration: `flow define/run/runs/logs/status/cancel`, `loop start/status/logs/stop/list`.
@@ -79,6 +80,8 @@ Read [references/hive-commands.md](references/hive-commands.md) for detailed com
 - Use `--no-wait` only when an upper layer will check readiness later.
 - Prefer `--background` flow runs and loops for durable async work; always record the run id.
 - Do not search transcripts with `hive search`; it searches seals, ledger, and session records only.
+- End bees with `hive retire` (archives the record, stays revivable), **not** `hive kill`. Reserve `hive kill --yes` for a true purge (it deletes the record, seals, and run dir irreversibly).
+- After a substrate crash (tmux server died, taking every pane), recover the whole fleet with `hive revive --crashed` — it revives exactly the un-commanded deaths (`crashed` state), skips retired/sealed bees, and auto-drives claude's startup dialogs. Use `--no-wait` to skip the post-relaunch readiness wait.
 - Clean dead metadata with `hive clean --dead --dry-run` before destructive cleanup.
 - For long or expensive bees, watch API-equivalent cost with `hive spend usage` and `hive spend session <bee>`. A session whose context-per-turn climbs toward the model's cap is hoarding context — cache-read tokens dominate the bill and it will compact sooner. Compact, checkpoint, or externalize state instead of letting context grow unbounded.
 

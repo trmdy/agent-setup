@@ -120,7 +120,9 @@ Prefer:
 
 `node_unreachable`: check `hive node inspect`, SSH/Tailscale reachability, and avoid broad cleanup until node status is known.
 
-`kill_failed`: use `hive attach --print` or substrate-native tmux commands to verify process state. Retry `hive kill` only after understanding why the prior kill failed.
+`kill_failed`/`retire_failed`: use `hive attach --print` or substrate-native tmux commands to verify process state. Retry `hive retire` (or `hive kill`) only after understanding why the prior teardown failed.
+
+`crashed`: the record is live but its session/host is gone with no retire/kill on record — an un-commanded death (tmux server crash, external kill, harness exit). Recover the whole fleet at once with `hive revive --crashed` (revives exactly the crashed bees, skips retired/sealed, prints a tmux-server-age diagnosis, and auto-drives claude's startup dialogs). `--fresh` starts a new provider session and clears the stale id; `--no-wait` skips the readiness wait. End bees deliberately with `hive retire` (archives, stays revivable), never `hive kill` unless you truly mean to purge the record + seals.
 
 No seal: use `hive wait --last` or `hive transcript` for recovery, then ask the bee to seal explicitly.
 
